@@ -1,4 +1,4 @@
-name: Node Docker CI/CD
+name: Node Docker CI/CD Full
 
 on:
   push:
@@ -9,31 +9,39 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Repo Checkout
+      - name: Checkout Repo
         uses: actions/checkout@v3
 
-      - name: Node Kur
+      - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 18
 
-      - name: Paketleri yükle
+      - name: Install Dependencies
         run: npm install
 
-      - name: Test çalıştır
+      - name: Run Tests
         run: npm test
 
-      - name: Docker Build
-        run: docker build -t my-node-app .
+      - name: Docker Login
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: AWS Deploy
+      - name: Build Docker Image
+        run: docker build -t ${{ secrets.DOCKER_USERNAME }}/my-node-app:latest .
+
+      - name: Push Docker Image
+        run: docker push ${{ secrets.DOCKER_USERNAME }}/my-node-app:latest
+
+      - name: Deploy to AWS
         uses: appleboy/ssh-action@v0.1.9
         with:
           host: ${{ secrets.AWS_HOST }}
           username: ${{ secrets.AWS_USER }}
           key: ${{ secrets.SSH_KEY }}
           script: |
-            docker stop my-node-app || true
-            docker rm my-node-app || true
-            docker rmi my-node-app || true
-            docker run -d -p 3000:3000 my-node-app
+            docker pull ${{ secrets.DOCKER_USERNAME }}/my-node-app:latest
+            docker-compose down
+            docker-compose up -d
