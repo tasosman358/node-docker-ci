@@ -1,0 +1,30 @@
+name: Node Docker CI/CD
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Repo Checkout
+        uses: actions/checkout@v3
+
+      - name: Node Kur
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Paketleri yükle
+        run: npm install
+
+      - name: Test çalıştır
+        run: npm test
+
+      - name: Docker Build
+        run: docker build -t my-node-app .
+
+      - name: Docker Run (opsiyonel)
+        run: docker run -d -p 3000:3000 my-node-app
